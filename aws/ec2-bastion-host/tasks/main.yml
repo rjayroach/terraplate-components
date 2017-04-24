@@ -1,0 +1,41 @@
+---
+- name: Create an EC2 key-pair
+  include_role:
+    name: tpl/aws/ec2/key-pair
+  vars:
+    instance: { ns: '{{ namespace }}' }
+
+- name: Create an EC2 instance
+  include_role:
+    name: tpl/aws/ec2/instance
+  vars:
+    instance: { ns: '{{ namespace }}' }
+    remote_states: { vpc: 'networking/vpc-pro-train' }
+
+- name: Create an EC2 Security Group
+  include_role:
+    name: tpl/aws/vpc/security-group
+  vars:
+    module: { name: 'security-group-allow-ssh' }
+    component: { name: 'security-group-allow-ssh' }
+    instance: { ns: '{{ namespace }}' }
+    remote_states: { vpc: 'networking/vpc-pro-train' }
+    # name: bastion-host-internal-interface
+    rules:
+      - { name: 'allow-ssh', type: 'ingress', protocol: 'tcp', from_port: 22, to_port: 22, cidr_blocks: '0.0.0.0/0' }
+
+- name: Create an EC2 EIP
+  include_role:
+    name: tpl/aws/ec2/eip
+  vars:
+    instance: { ns: '{{ namespace }}' } #, name: 'eip' }
+    remote_states: { ec2: 'bastion/server' }
+    dependencies: ['bastion/server']
+
+- name: Create a Route53 record
+  include_role:
+    name: tpl/aws/route53/record
+  vars:
+    instance: { ns: '{{ namespace }}', name: 'hostname' }
+    remote_states: { domain: 'dns/subdomain', host: 'bastion/eip' }
+    dependencies: ['bastion/eip']
