@@ -1,21 +1,21 @@
 ---
 - name: Create an IAM user
   include_role:
-    name: tpl/aws/iam/user
+    name: terraplate/aws/iam/user
   vars:
     component: { ns: 'app' }
     instance: { ns: '{{ namespace }}', name: 'iam-user' }
 
 - name: Create an IAM user
   include_role:
-    name: tpl/aws/iam/access-key
+    name: terraplate/aws/iam/access-key
   vars:
     component: { ns: 'app' }
     instance: { ns: '{{ namespace }}', name: 'iam-key' }
 
 - name: Create an S3 bucket
   include_role:
-    name: tpl/aws/s3/bucket
+    name: terraplate/aws/s3/bucket
   vars:
     component: { ns: 'app' }
     instance: { ns: '{{ namespace }}', name: 'app' }
