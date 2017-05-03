@@ -1,0 +1,7 @@
+---
+- include_role:
+    name: terraplate/component
+
+- name: Define a Domain 
+  include_role:
+    name: terraplate/aws/route53/subdomain

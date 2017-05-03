@@ -1,40 +1,61 @@
+# Create a Bastion Host with unique key-pair and allowing only ssh from a specific cidr block or current-ip
+# with a fixed (elastic) IP and mapped Route53 hostname
 ---
-- name: Create an EC2 key-pair
-  include_role:
-    name: terraplate/aws/ec2/key-pair
-  vars:
-    instance: { ns: '{{ namespace }}' }
-
-- name: Create an EC2 instance
-  include_role:
-    name: terraplate/aws/ec2/instance
-  vars:
-    instance: { ns: '{{ namespace }}' }
-    remote_states: { vpc: 'networking/vpc-pro-train' }
+- include_role:
+    name: terraplate/component
 
 - name: Create an EC2 Security Group allowing SSH
   include_role:
     name: terraplate/aws/vpc/security-group
   vars:
-    module: { name: 'security-group-allow-ssh' }
-    component: { name: 'security-group-allow-ssh' }
-    instance: { ns: '{{ namespace }}' }
-    remote_states: { vpc: 'networking/vpc-pro-train' }
-    rules:
-      - { name: 'allow-ssh', type: 'ingress', protocol: 'tcp', from_port: 22, to_port: 22, cidr_blocks: '0.0.0.0/0' }
+    meta:
+      name: security-group-allow-ssh
+    tfvars:
+      name: allow ssh
+      description: allow ssh
+
+- name: Create an EC2 Security Group Rule allowing all out
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule
+  vars:
+    meta:
+      name: security-group-rule-allow-all-out
+    tfvars:
+      name: allow-all-out
+      type: egress
+      protocol: -1
+      from_port: 0
+      to_port: 0
+      cidr_blocks: 0.0.0.0/0
+
+- name: Create an EC2 Security Group Rule allowing SSH
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule
+  vars:
+    meta:
+      name: security-group-rule-allow-ssh
+    tfvars:
+      name: allow-ssh
+      type: ingress
+      protocol: tcp
+      from_port: 22
+      to_port: 22
+
+- name: Create an EC2 key-pair
+  include_role:
+    name: terraplate/aws/ec2/key-pair
+
+- name: Create an EC2 instance
+  include_role:
+    name: terraplate/aws/ec2/instance
+  vars:
+    tfvars:
+      tag_name: bastion-host
 
 - name: Create an EC2 EIP
   include_role:
     name: terraplate/aws/ec2/eip
-  vars:
-    instance: { ns: '{{ namespace }}' }
-    remote_states: { ec2: 'bastion/server' }
-    dependencies: ['bastion/server']
 
 - name: Create a Route53 record
   include_role:
     name: terraplate/aws/route53/record
-  vars:
-    instance: { ns: '{{ namespace }}', name: 'hostname' }
-    remote_states: { domain: 'dns/subdomain', host: 'bastion/eip' }
-    dependencies: ['bastion/eip']

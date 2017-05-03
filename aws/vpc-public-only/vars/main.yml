@@ -1,0 +1,16 @@
+---
+component_meta:
+  ns: vpc
+  name: public-only
+
+  external_vars: {}
+
+  module_vars:
+    vpc_id:
+      ns: vpc-vpc
+    route_table_id:
+      ns: vpc-vpc
+    igw_id:
+      ns: vpc-igw
+
+  output_vars: {}

@@ -1,0 +1,17 @@
+---
+component_meta:
+  ns: s3
+  name: web-app
+
+  external_vars: {}
+
+  module_vars:
+    aws_access_key_id:
+      ns: iam-access-key
+    aws_secret_access_key:
+      ns: iam-access-key
+    iam_user_arn:
+      ns: iam-user
+      name: arn
+
+  output_vars: {}

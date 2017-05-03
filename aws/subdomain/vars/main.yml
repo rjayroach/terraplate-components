@@ -1,0 +1,13 @@
+---
+component_meta:
+  ns: support
+  name: subdomain
+
+  external_vars:
+    parent_zone_id:
+      ns: domain
+      name: zone_id
+
+  module_vars: {}
+
+  output_vars: {}

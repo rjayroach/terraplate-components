@@ -1,0 +1,31 @@
+---
+component_meta:
+  ns: support
+  name: bastion
+
+  # A list of vars needed from remote-states by this component's modules
+  external_vars:
+    subnet_id: vpc
+    vpc_id: vpc
+
+  # module_vars are available within the component by declaring a resource in the component's role
+  # so the component is aware of it's member modules so it is defined here
+  module_vars:
+    security_group_id: vpc-security-group-allow-ssh
+
+  # output_vars is a hash of the vars that this module outputs outside the component
+  output_vars: {}
+
+  # knowledge of remote states is external to the component so needs to be defined by the playbook
+
+  # dependenices cannot be known inside the component so they need to be declared in the playbook
+  # dependencies: []
+
+  # NOTE: These will be computed by the component code
+  # external_vars_needed is a hash of the needed vars to the module or remote_state id that will provide them
+  #   security_group_id: sg
+  #   subnet_id: vpc
+  #   vpc_id: vpc
+  # security_group_id:  # used by sg-rule + instance
+  # subnet_id: # used by instance
+  # vpc_id:   # used by sg

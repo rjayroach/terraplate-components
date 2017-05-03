@@ -1,0 +1,39 @@
+---
+- include_role:
+    name: terraplate/component
+
+- name: Define a VPC
+  include_role:
+    name: terraplate/aws/vpc/vpc
+  vars:
+    tfvars:
+      cidr_block: 172.16.0.0/20
+
+- name: Attach an Internet Gateway
+  include_role:
+    name: terraplate/aws/vpc/internet-gateway
+
+- name: Set default route to the Internet Gateway
+  include_role:
+    name: terraplate/aws/vpc/route
+
+- name: Define a public subnet
+  include_role:
+    name: terraplate/aws/vpc/subnet
+  vars:
+    meta:
+      name: subnet-public
+    tfvars:
+      cidr_block: 172.16.1.0/24
+      tag_name: subnet-public
+
+- name: Define a private subnet
+  include_role:
+    name: terraplate/aws/vpc/subnet
+  vars:
+    meta:
+      name: subnet-private
+    tfvars:
+      cidr_block: 172.16.2.0/24
+      map_public_ip_on_launch: 'false'
+      tag_name: subnet-private
