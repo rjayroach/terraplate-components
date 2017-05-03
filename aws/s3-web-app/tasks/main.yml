@@ -10,14 +10,18 @@
   include_role:
     name: terraplate/aws/iam/access-key
 
+- name: Create an policy document for the S3 bucket
+  include_role:
+    name: terraplate/aws/iam/policy-document
+
 - name: Create an S3 bucket
   include_role:
     name: terraplate/aws/s3/bucket
 
-# - name: Create a Route53 record
-#   include_role:
-#     name: terraplate/aws/route53/record
-#   vars:
-#     instance: { ns: '{{ instance_ns }}', name: 'hostname' }
-#     remote_states: { domain: 'dns/subdomain', host: '{{ instance_ns }}/eip' }
-#     dependencies: ['{{ instance_ns }}/eip']
+- name: Create an environment file for the S3 bucket
+  include_role:
+    name: terraplate/aws/s3/template-file
+
+- name: Create a Route53 record
+  include_role:
+    name: terraplate/aws/route53/record-alias

@@ -3,9 +3,18 @@ component_meta:
   ns: s3
   name: web-app
 
-  external_vars: {}
+  external_vars:
+    zone_id:
+      ns: domain
+      name: route53_subdomain_zone_id
 
   module_vars:
+    alias_name:
+      ns: s3-bucket
+      name: website_domain
+    alias_zone_id:
+      ns: s3-bucket
+      name: hosted_zone_id
     aws_access_key_id:
       ns: iam-access-key
     aws_secret_access_key:
@@ -13,5 +22,7 @@ component_meta:
     iam_user_arn:
       ns: iam-user
       name: arn
+    policy:
+      ns: iam-policy-document
 
   output_vars: {}
