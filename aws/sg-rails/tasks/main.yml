@@ -1,0 +1,165 @@
+---
+- include_role:
+    name: terraplate/component
+
+### SG for App Server
+- name: Create the Rails App Server Security Group
+  include_role:
+    name: terraplate/aws/vpc/security-group
+  vars:
+    meta:
+      name: '{{ sg_app_server }}'
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+    tfvars:
+      description: rails-app-server
+      name: rails-app-server
+      tags:
+        Name: Rails SG
+
+- name: SG Rule ingress tcp from 3000 to 3000 all
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule-cidr
+  vars:
+    meta:
+      name: security-group-rule-in-3000
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_app_server }}'
+    tfvars:
+      name: allow-3000-in
+      type: ingress
+      protocol: tcp
+      from_port: 3000
+      to_port: 3000
+      cidr_blocks: 0.0.0.0/0
+
+- name: Http ingress tcp from 80 to 80 all
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule-cidr
+  vars:
+    meta:
+      name: security-group-rule-in-80
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_app_server }}'
+    tfvars:
+      name: allow-http-in
+      type: ingress
+      protocol: tcp
+      from_port: 80
+      to_port: 80
+      cidr_blocks: 0.0.0.0/0
+
+
+- name: SG Rule ingress tcp from 22 to 22 bastion host
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule
+  vars:
+    meta:
+      name: security-group-rule-in-ssh
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_app_server }}'
+      source_security_group_id:
+        provider: bastion
+        name: vpc_security_group_bastion_host_security_group_id
+    tfvars:
+      name: allow-ssh
+      type: ingress
+      protocol: tcp
+      from_port: 22
+      to_port: 22
+
+- name: Security Group Rule egress from all to all
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule-cidr
+  vars:
+    meta:
+      name: security-group-rule-out-all
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_app_server }}'
+    tfvars:
+      name: allow-all-out
+      type: egress
+      protocol: -1
+      from_port: 0
+      to_port: 0
+      cidr_blocks: 0.0.0.0/0
+
+
+### ELB Security Group
+# See: http://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-groups.html#recommended-sg-rules
+- name: Create the Rails ELB Security Group
+  include_role:
+    name: terraplate/aws/vpc/security-group
+  vars:
+    meta:
+      name: '{{ sg_elb }}'
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+    tfvars:
+      name: security-group-elb-rails
+      description: security group for elb rails
+      tags:
+        Name: Rails ELB SG
+
+- name: SG Rule ingress tcp from 443 to 443 all
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule-cidr
+  vars:
+    meta:
+      name: security-group-rule-in-443
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_elb }}'
+    tfvars:
+      name: allow-443-in
+      type: ingress
+      protocol: tcp
+      from_port: 443
+      to_port: 443
+      cidr_blocks: 0.0.0.0/0
+
+- name: SG Rule egress tcp from 3000 to 3000 app-server
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule
+  vars:
+    meta:
+      name: security-group-rule-out-3000
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_elb }}'
+      source_security_group_id:
+        provider: 'vpc-{{ sg_app_server }}'
+        name: security_group_id
+    tfvars:
+      name: allow-3000
+      type: egress
+      protocol: tcp
+      from_port: 3000
+      to_port: 3000
+
+- name: SG Rule egress tcp from 80 to 80 app-server
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule
+  vars:
+    meta:
+      name: security-group-rule-out-80
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_elb }}'
+      source_security_group_id:
+        provider: 'vpc-{{ sg_app_server }}'
+        name: security_group_id
+    tfvars:
+      name: allow-80
+      type: egress
+      protocol: tcp
+      from_port: 80
+      to_port: 80

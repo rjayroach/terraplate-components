@@ -1,0 +1,72 @@
+---
+- include_role:
+    name: terraplate/component
+
+- name: Create an EC2 Security Group for the RDS Instance
+  include_role:
+    name: terraplate/aws/vpc/security-group
+  vars:
+    meta:
+      name: security-group-postgres
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+    tfvars:
+      name: security-group-postgres
+      description: RDS Security Group
+
+- name: Create an EC2 Security Group Rule allowing 5432 in
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule
+  vars:
+    meta:
+      name: security-group-rule-allow-all-out
+    external_tfvars:
+      security_group_id:
+        provider: vpc-security-group-postgres
+      source_security_group_id:
+        provider: sg
+        name: vpc_security_group_rails_app_server_security_group_id
+    tfvars:
+      from_port: 0
+      name: allow-5432-in
+      protocol: TCP
+      to_port: 5432
+      type: ingress
+
+- name: Create the DB Subnet Group
+  include_role:
+    name: terraplate/aws/rds/db-subnet-group
+  vars:
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+      subnet_ids:
+        - { provider: vpc, name: vpc_subnet_private_subnet_id }
+        - { provider: vpc, name: vpc_subnet_private_2_subnet_id }
+    tfvars:
+      description: rails-app-server
+      name: rails-app-server
+      tags:
+        Name: Rails SG
+
+- name: Create the database instance
+  include_role:
+    name: terraplate/aws/rds/db-instance
+  vars:
+    external_tfvars:
+      db_subnet_group_name:
+        provider: rds-db-subnet-group
+        name: group_id
+      vpc_security_group_ids:
+        - { provider: 'vpc-security-group-postgres', name: 'security_group_id' }
+
+- name: Create an environment file for the database host name
+  include_role:
+    name: terraplate/aws/rds/template-file
+  vars:
+    external_tfvars:
+      instance_address:
+        provider: rds-db-instance

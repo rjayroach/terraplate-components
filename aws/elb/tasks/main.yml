@@ -1,0 +1,44 @@
+---
+- include_role:
+    name: terraplate/component
+
+- name: Create an ELB
+  include_role:
+    name: terraplate/aws/ec2/elb
+  vars:
+    external_tfvars:
+      listener_ssl_certificate_id:
+        provider: iam
+        name: server_cert_arn
+      subnets:
+        - { provider: vpc, name: vpc_subnet_public_subnet_id }
+      security_groups:
+        - { provider: sg, name: vpc_sg_elb_rails_security_group_id }
+
+- name: Attach the ELB to an Instance
+  include_role:
+    name: terraplate/aws/ec2/elb-attachment
+  vars:
+    external_tfvars:
+      elb_instance_id:
+        provider: ec2-elb
+        name: instance_id
+      ec2_instance_id:
+        provider: server
+        name: ec2_instance_instance_id
+
+- name: Create a Route53 record for the ELB
+  include_role:
+    name: terraplate/aws/route53/record-alias
+  vars:
+    external_tfvars:
+      # TODO: the zone id should be set from the user vars
+      zone_id:
+        provider: domain
+        name: zone_id
+      alias_name:
+        provider: ec2-elb
+        name: dns_name
+      alias_zone_id:
+        provider: ec2-elb
+        name: zone_id
