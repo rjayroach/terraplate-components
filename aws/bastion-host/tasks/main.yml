@@ -4,36 +4,47 @@
 - include_role:
     name: terraplate/component
 
-- name: Create an EC2 Security Group allowing SSH
+- name: Create an EC2 Security Group for the Bastion Host
   include_role:
     name: terraplate/aws/vpc/security-group
   vars:
     meta:
-      name: security-group-allow-ssh
+      name: security-group-bastion-host
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
     tfvars:
-      name: allow ssh
-      description: allow ssh
+      name: bastion host
+      description: bastion host
+      tags:
+        Name: Bastion Host
 
 - name: Create an EC2 Security Group Rule allowing all out
   include_role:
-    name: terraplate/aws/vpc/security-group-rule
+    name: terraplate/aws/vpc/security-group-rule-cidr
   vars:
     meta:
       name: security-group-rule-allow-all-out
+    external_tfvars:
+      security_group_id:
+        provider: vpc-security-group-bastion-host
     tfvars:
       name: allow-all-out
       type: egress
       protocol: -1
       from_port: 0
       to_port: 0
-      cidr_blocks: 0.0.0.0/0
 
-- name: Create an EC2 Security Group Rule allowing SSH
+- name: Create an EC2 Security Group Rule allowing SSH in
   include_role:
-    name: terraplate/aws/vpc/security-group-rule
+    name: terraplate/aws/vpc/security-group-rule-cidr
   vars:
     meta:
       name: security-group-rule-allow-ssh
+    external_tfvars:
+      security_group_id:
+        provider: vpc-security-group-bastion-host
     tfvars:
       name: allow-ssh
       type: ingress
@@ -49,13 +60,37 @@
   include_role:
     name: terraplate/aws/ec2/instance
   vars:
+    external_tfvars:
+      vpc_security_group_ids:
+        - { provider: 'vpc-security-group-bastion-host', name: 'security_group_id' }
+      subnet_id:
+        provider: vpc
+        name: vpc_subnet_public_subnet_id
     tfvars:
-      tag_name: bastion-host
+      tags:
+        Name: bastion-host
 
 - name: Create an EC2 EIP
   include_role:
     name: terraplate/aws/ec2/eip
 
+- name: Associate the EIP to the EC2
+  include_role:
+    name: terraplate/aws/ec2/eip-association
+  vars:
+    external_tfvars:
+      allocation_id:
+        provider: ec2-eip
+      instance_id:
+        provider: ec2-instance
+
 - name: Create a Route53 record
   include_role:
     name: terraplate/aws/route53/record
+  vars:
+    external_tfvars:
+      public_ip:
+        provider: ec2-eip
+      zone_id:
+        provider: domain
+        name: route53_subdomain_zone_id

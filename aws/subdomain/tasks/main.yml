@@ -5,3 +5,8 @@
 - name: Define a Domain 
   include_role:
     name: terraplate/aws/route53/subdomain
+  vars:
+    external_tfvars:
+      parent_zone_id:
+        ns: domain
+        name: zone_id

@@ -13,15 +13,41 @@
 - name: Create an policy document for the S3 bucket
   include_role:
     name: terraplate/aws/iam/policy-document
+  vars:
+    external_tfvars:
+      iam_user_arn:
+        provider: iam-user
+        name: arn
 
 - name: Create an S3 bucket
   include_role:
     name: terraplate/aws/s3/bucket
-
-- name: Create an environment file for the S3 bucket
-  include_role:
-    name: terraplate/aws/s3/template-file
+  vars:
+    external_tfvars:
+      policy:
+        provider: iam-policy-document
 
 - name: Create a Route53 record
   include_role:
     name: terraplate/aws/route53/record-alias
+  vars:
+    external_tfvars:
+      alias_name:
+        provider: s3-bucket
+        name: website_domain
+      alias_zone_id:
+        provider: s3-bucket
+        name: hosted_zone_id
+      zone_id:
+        provider: domain
+        name: route53_subdomain_zone_id
+
+- name: Create an environment file for the S3 bucket
+  include_role:
+    name: terraplate/aws/s3/template-file
+  vars:
+    external_tfvars:
+      aws_access_key_id:
+        provider: iam-access-key
+      aws_secret_access_key:
+        provider: iam-access-key

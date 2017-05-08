@@ -2,37 +2,3 @@
 component_meta:
   ns: support
   name: bastion
-
-  # A list of vars needed from remote-states by this component's modules
-  external_vars:
-    subnet_id:
-      ns: vpc
-      name: vpc_subnet_public_subnet_id
-    vpc_id:
-      ns: vpc
-      name: vpc_vpc_vpc_id
-    zone_id:
-      ns: domain
-      name: route53_subdomain_zone_id
-
-  # A module_var declares a reference to an output from a *resource* declared as a module within the component
-  module_vars:
-    instance_id:
-      ns: ec2-instance
-    public_ip:
-      ns: ec2-eip
-    security_group_id:
-      ns: vpc-security-group-allow-ssh
-    vpc_security_group_ids:
-      ns: vpc-security-group-allow-ssh
-      name: security_group_id
-
-  # output_vars is a hash of the vars that this module outputs outside the component
-  # TODO: maybe this isn't necessary because resources output their values anyway
-  output_vars: {}
-
-  # TODO: Both remote_states and dependencies will be figured out by the package in future releases
-  # knowledge of remote states is external to the component so they need to be defined by the playbook
-  # remote_states: {}
-  # knowledge of dependenices is external to the component so they need to be declared in the playbook
-  # dependencies: []
