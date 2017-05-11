@@ -11,8 +11,19 @@
     tfvars:
       cidr_block: 10.0.0.0/20
 
+- name: Create a custom Route Table
+  include_role:
+    name: terraplate/aws/vpc/route-table
+  vars:
+    external_tfvars:
+      vpc_id:
+        provider: vpc-vpc
+    tfvars:
+      tags:
+        Name: subnet-public
 
-### Public Subnet
+
+### Public Subnet 1
 - name: Define a public subnet
   include_role:
     name: terraplate/aws/vpc/subnet
@@ -27,26 +38,46 @@
       tags:
         Name: subnet-public
 
-- name: Create a custom Route Table
-  include_role:
-    name: terraplate/aws/vpc/route-table
-  vars:
-    external_tfvars:
-      vpc_id:
-        provider: vpc-vpc
-    tfvars:
-      tags:
-        Name: subnet-public
-
 - name: Associate the public subnet to the Custom Route Table
   include_role:
     name: terraplate/aws/vpc/route-table-association
   vars:
+    meta:
+      name: rtb-assn-to-public-subnet
     external_tfvars:
       route_table_id:
         provider: vpc-route-table
       subnet_id:
         provider: vpc-subnet-public
+
+
+### Public Subnet 2
+- name: Define a public subnet
+  include_role:
+    name: terraplate/aws/vpc/subnet
+  vars:
+    meta:
+      name: subnet-public-2
+    external_tfvars:
+      vpc_id:
+        provider: vpc-vpc
+    tfvars:
+      cidr_block: 10.0.2.0/24
+      tags:
+        Name: subnet-public-2
+
+- name: Associate the public subnet to the Custom Route Table
+  include_role:
+    name: terraplate/aws/vpc/route-table-association
+  vars:
+    meta:
+      name: rtb-assn-to-public-subnet-2
+    external_tfvars:
+      route_table_id:
+        provider: vpc-route-table
+      subnet_id:
+        provider: vpc-subnet-public-2
+
 
 - name: Create an Internet Gateway
   include_role:

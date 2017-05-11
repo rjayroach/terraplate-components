@@ -19,21 +19,38 @@
       tags:
         Name: Rails SG
 
-- name: SG Rule ingress tcp from 3000 to 3000 all
+- name: SG Rule ingress tcp from 13000 to 13000 all
   include_role:
     name: terraplate/aws/vpc/security-group-rule-cidr
   vars:
     meta:
-      name: security-group-rule-in-3000
+      name: security-group-rule-in-13000
     external_tfvars:
       security_group_id:
         provider: 'vpc-{{ sg_app_server }}'
     tfvars:
-      name: allow-3000-in
+      name: allow-13000-in
       type: ingress
       protocol: tcp
-      from_port: 3000
-      to_port: 3000
+      from_port: 13000
+      to_port: 13000
+      cidr_blocks: 0.0.0.0/0
+
+- name: SG Rule ingress tcp from 13001 to 13001 all
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule-cidr
+  vars:
+    meta:
+      name: security-group-rule-in-13001
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_app_server }}'
+    tfvars:
+      name: allow-13001-in
+      type: ingress
+      protocol: tcp
+      from_port: 13001
+      to_port: 13001
       cidr_blocks: 0.0.0.0/0
 
 - name: Http ingress tcp from 80 to 80 all
@@ -109,6 +126,10 @@
       tags:
         Name: Rails ELB SG
 
+
+###
+# Inbound from internet
+###
 - name: SG Rule ingress tcp from 443 to 443 all
   include_role:
     name: terraplate/aws/vpc/security-group-rule-cidr
@@ -126,12 +147,50 @@
       to_port: 443
       cidr_blocks: 0.0.0.0/0
 
-- name: SG Rule egress tcp from 3000 to 3000 app-server
+- name: SG Rule ingress tcp from 13000 to 13000 all
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule-cidr
+  vars:
+    meta:
+      name: security-group-elb-rule-in-13000
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_elb }}'
+    tfvars:
+      name: allow-13000-in
+      type: ingress
+      protocol: tcp
+      from_port: 13000
+      to_port: 13000
+      cidr_blocks: 0.0.0.0/0
+
+- name: SG Rule ingress tcp from 13001 to 13001 all
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule-cidr
+  vars:
+    meta:
+      name: security-group-elb-rule-in-13001
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_elb }}'
+    tfvars:
+      name: allow-13001-in
+      type: ingress
+      protocol: tcp
+      from_port: 13001
+      to_port: 13001
+      cidr_blocks: 0.0.0.0/0
+
+
+###
+# Outbout from ELB to app server
+###
+- name: SG Rule egress tcp from 13000 to 13000 app-server
   include_role:
     name: terraplate/aws/vpc/security-group-rule
   vars:
     meta:
-      name: security-group-rule-out-3000
+      name: security-group-rule-out-13000
     external_tfvars:
       security_group_id:
         provider: 'vpc-{{ sg_elb }}'
@@ -139,11 +198,30 @@
         provider: 'vpc-{{ sg_app_server }}'
         name: security_group_id
     tfvars:
-      name: allow-3000
+      name: allow-13000
       type: egress
       protocol: tcp
-      from_port: 3000
-      to_port: 3000
+      from_port: 13000
+      to_port: 13000
+
+- name: SG Rule egress tcp from 13001 to 13001 app-server
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule
+  vars:
+    meta:
+      name: security-group-rule-out-13001
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ sg_elb }}'
+      source_security_group_id:
+        provider: 'vpc-{{ sg_app_server }}'
+        name: security_group_id
+    tfvars:
+      name: allow-13001
+      type: egress
+      protocol: tcp
+      from_port: 13001
+      to_port: 13001
 
 - name: SG Rule egress tcp from 80 to 80 app-server
   include_role:
