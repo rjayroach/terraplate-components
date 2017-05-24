@@ -1,0 +1,96 @@
+# Create private subnets according to AWS documentation
+# See: http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html#Configuration-2
+---
+- include_role:
+    name: terraplate/component
+
+### Private Subnet 1
+- name: Define subnet 1
+  include_role:
+    name: terraplate/aws/vpc/subnet
+  vars:
+    meta:
+      name: subnet-1
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+    tfvars:
+      cidr_block: 10.0.0.0/24
+      map_public_ip_on_launch: 'false'
+      tags:
+        Name: subnet-1
+
+- name: Associate subnet 1 to the Main Route Table
+  include_role:
+    name: terraplate/aws/vpc/route-table-association
+  vars:
+    meta:
+      name: rtb-assn-to-subnet-1
+    external_tfvars:
+      route_table_id:
+        provider: vpc
+        name: vpc_vpc_route_table_id
+      subnet_id:
+        provider: vpc-subnet-1
+
+### Private Subnet 2
+- name: Define subnet 2
+  include_role:
+    name: terraplate/aws/vpc/subnet
+  vars:
+    meta:
+      name: subnet-2
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+    tfvars:
+      cidr_block: 10.0.1.0/24
+      map_public_ip_on_launch: 'false'
+      tags:
+        Name: subnet-2
+
+- name: Associate the subnet 2 to the Main Route Table
+  include_role:
+    name: terraplate/aws/vpc/route-table-association
+  vars:
+    meta:
+      name: rtb-assn-to-subnet-2
+    external_tfvars:
+      route_table_id:
+        provider: vpc
+        name: vpc_vpc_route_table_id
+      subnet_id:
+        provider: vpc-subnet-2
+
+
+### Create Nat GW with EIP and route table for private subnet
+- name: Create an EC2 EIP for the NAT Gateway
+  include_role:
+    name: terraplate/aws/ec2/eip
+
+- name: Attach a NAT Gateway
+  include_role:
+    name: terraplate/aws/vpc/nat-gateway
+  vars:
+    external_tfvars:
+      allocation_id:
+        provider: ec2-eip
+      subnet_id:
+        provider: public
+        name: vpc_subnet_1_subnet_id
+
+- name: Set the default route of the VPC Main Route Table to the NAT Gateway
+  include_role:
+    name: terraplate/aws/vpc/route
+  vars:
+    meta:
+      name: route-subnet-to-nat-gw
+    external_tfvars:
+      route_table_id:
+        provider: vpc
+        name: vpc_vpc_route_table_id
+      gateway_id:
+        provider: vpc
+        name: vpc_igw_gateway_id

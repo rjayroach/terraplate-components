@@ -1,4 +1,4 @@
 ---
 component_meta:
   ns: vpc
-  name: public-private
+  name: subnets-public

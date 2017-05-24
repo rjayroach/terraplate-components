@@ -1,0 +1,8 @@
+---
+component_meta:
+  ns: vpc
+  name: security-groups
+
+security_groups: []
+cidr_rules: []
+sg_rules: []

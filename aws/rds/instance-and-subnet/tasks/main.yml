@@ -1,0 +1,54 @@
+---
+- include_role:
+    name: terraplate/component
+
+- name: Create the DB Subnet Group
+  include_role:
+    name: terraplate/aws/rds/db-subnet-group
+  vars:
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+      subnet_ids: '{{ subnet_ids }}'
+    tfvars:
+      description: rails-app-server
+      name: rails-app-server
+      tags:
+        Name: Rails SG
+
+- name: Create the database instance
+  include_role:
+    name: terraplate/aws/rds/db-instance
+  vars:
+    external_tfvars:
+      db_subnet_group_name:
+        provider: rds-db-subnet-group
+        name: group_id
+      vpc_security_group_ids: '{{ vpc_security_group_ids }}'
+    tfvars:
+      availability_zone: '{{ availability_zone }}'
+      engine: '{{ engine }}'
+      engine_version: '{{ engine_version }}'
+      final_snapshot_identifier: "{{ final_snapshot_identifier | default(identifier + '-final') }}"
+      identifier: '{{ identifier }}'
+      instance_class: '{{ instance_class }}'
+      name: '{{ instance_name }}'
+      parameter_group_name: '{{ parameter_group_name }}'
+      password: '{{ password }}'
+      port: '{{ port }}'
+      storage_encrypted: "{{ storage_encrypted | default('false') }}"
+      username: '{{ username }}'
+      tags: '{{ tags }}'
+
+- name: Create an environment file for the database host name
+  include_role:
+    name: terraplate/aws/rds/template-file
+  vars:
+    external_tfvars:
+      instance_address:
+        provider: rds-db-instance
+    tfvars:
+      key: '{{ file_key }}'
+      name: '{{ file_name }}'
+      path: '{{ file_path }}'

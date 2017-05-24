@@ -20,7 +20,7 @@
         provider: vpc-vpc
     tfvars:
       tags:
-        Name: subnet-public
+        Name: route-to-igw
 
 - name: Create an Internet Gateway
   include_role:

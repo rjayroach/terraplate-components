@@ -1,0 +1,64 @@
+# Create public subnets according to AWS documentation
+# See: http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html#Configuration-2
+---
+- include_role:
+    name: terraplate/component
+
+### Public Subnet 1
+- name: Define subnet 1
+  include_role:
+    name: terraplate/aws/vpc/subnet
+  vars:
+    meta:
+      name: subnet-1
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+    tfvars:
+      cidr_block: 10.0.2.0/24
+      tags:
+        Name: subnet-1
+
+- name: Associate subnet 1 to the Custom Route Table
+  include_role:
+    name: terraplate/aws/vpc/route-table-association
+  vars:
+    meta:
+      name: rtb-assn-to-subnet-1
+    external_tfvars:
+      route_table_id:
+        provider: vpc
+        name: vpc_route_table_route_table_id
+      subnet_id:
+        provider: vpc-subnet-1
+
+
+### Public Subnet 2
+- name: Define subnet 2
+  include_role:
+    name: terraplate/aws/vpc/subnet
+  vars:
+    meta:
+      name: subnet-2
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+    tfvars:
+      cidr_block: 10.0.3.0/24
+      tags:
+        Name: subnet-2
+
+- name: Associate subnet 2 to the Custom Route Table
+  include_role:
+    name: terraplate/aws/vpc/route-table-association
+  vars:
+    meta:
+      name: rtb-assn-to-subnet-2
+    external_tfvars:
+      route_table_id:
+        provider: vpc
+        name: vpc_route_table_route_table_id
+      subnet_id:
+        provider: vpc-subnet-2

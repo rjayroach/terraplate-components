@@ -1,0 +1,68 @@
+---
+- include_role:
+    name: terraplate/component
+
+### SG for App Server
+- name: Create Security Group
+  include_role:
+    name: terraplate/aws/vpc/security-group
+  vars:
+    meta:
+      name: '{{ sg.meta_name }}'
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+    tfvars:
+      description: '{{ sg.description }}'
+      name: '{{ sg.name }}'
+      tags: '{{ sg.tags }}'
+  with_items: '{{ security_groups }}'
+  loop_control:
+    loop_var: sg
+
+
+- name: SG CIDR Rule
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule-cidr
+  vars:
+    meta:
+      name: 'rule-{{ rule.group }}-{{ rule.type }}-{{ rule.port }}'
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ rule.group }}'
+    tfvars:
+      name: 'allow-{{ rule.port }}-{{ rule.type }}'
+      type: '{{ rule.type }}'
+      protocol: "{{ rule.protocol | default('tcp') }}"
+      from_port: '{{ rule.port }}'
+      to_port: '{{ rule.port }}'
+      cidr_blocks: "{{ rule.cidr_blocks | default('0.0.0.0/0') }}"
+  with_items: '{{ cidr_rules }}'
+  loop_control:
+    loop_var: rule
+
+
+- name: SG Rule
+  # - name: SG Rule ingress tcp from 22 to 22 bastion host
+  # { port: 22, type: ingress, provider: app-server, source_provider: bastion, source_name: 
+  include_role:
+    name: terraplate/aws/vpc/security-group-rule
+  vars:
+    meta:
+      name: 'rule-{{ rule.group }}-{{ rule.type }}-{{ rule.port }}'
+    external_tfvars:
+      security_group_id:
+        provider: 'vpc-{{ rule.group }}'
+      source_security_group_id:
+        provider: 'vpc-{{ rule.source_group }}' # bastion
+        name: "{{ rule.source_name | default('security_group_id') }}" # vpc_security_group_bastion_host_security_group_id
+    tfvars:
+      name: 'allow-{{ rule.port }}-{{ rule.type }}'
+      type: '{{ rule.type }}'
+      protocol: "{{ rule.protocol | default('tcp') }}"
+      from_port: '{{ rule.port }}'
+      to_port: '{{ rule.port }}'
+  with_items: '{{ sg_rules }}'
+  loop_control:
+    loop_var: rule

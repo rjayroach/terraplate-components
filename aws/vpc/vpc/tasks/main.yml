@@ -1,0 +1,113 @@
+# Create a VPC with public and private subnets according to AWS documentation
+# See: http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html#Configuration-2
+---
+- include_role:
+    name: terraplate/component
+  tags: always
+
+- name: Define a VPC
+  include_role:
+    name: terraplate/aws/vpc/vpc
+  vars:
+    tfvars:
+      cidr_block: '{{ cidr_block }}'
+      tags: '{{ tags }}'
+
+- name: Create a custom Route Table
+  include_role:
+    name: terraplate/aws/vpc/route-table
+  vars:
+    external_tfvars:
+      vpc_id:
+        provider: vpc-vpc
+    tfvars:
+      tags:
+        Name: route-to-igw
+
+- name: Create an Internet Gateway
+  include_role:
+    name: terraplate/aws/vpc/internet-gateway
+  vars:
+    external_tfvars:
+      vpc_id:
+        provider: vpc-vpc
+
+- name: Set the default route of the Custom Route Table to the Internet Gateway
+  include_role:
+    name: terraplate/aws/vpc/route
+  vars:
+    external_tfvars:
+      route_table_id:
+        provider: vpc-route-table
+      gateway_id:
+        provider: vpc-igw
+
+
+### Define subnets
+- name: Define subnet
+  include_role:
+    name: terraplate/aws/vpc/subnet
+  vars:
+    meta:
+      name: '{{ subnet.meta_name }}'
+    external_tfvars:
+      vpc_id:
+        provider: vpc-vpc
+        name: vpc_id
+    tfvars:
+      availability_zone: '{{ subnet.availability_zone }}'
+      cidr_block: '{{ subnet.cidr_block }}'
+      map_public_ip_on_launch: "{{ subnet.map_public_ip_on_launch | default('true') }}"
+      tags: '{{ subnet.tags }}'
+  with_items: '{{ subnets }}'
+  loop_control:
+    loop_var: subnet
+
+- name: Associate Subnet to Route Table
+  include_role:
+    name: terraplate/aws/vpc/route-table-association
+  vars:
+    meta:
+      name: 'rtb-assn-to-{{ subnet.meta_name }}'
+    external_tfvars:
+      route_table_id:
+        provider: "{{ subnet.rtb.split('.')[0] }}"
+        name: "{{ subnet.rtb.split('.')[-1] }}"
+      subnet_id:
+        provider: 'vpc-{{ subnet.meta_name }}'
+  with_items: '{{ subnets }}'
+  loop_control:
+    loop_var: subnet
+
+
+### Create Nat GW with EIP and route table for private subnet
+- name: Create an EC2 EIP for the NAT Gateway
+  include_role:
+    name: terraplate/aws/ec2/eip
+  when: nat_gateway is defined
+
+- name: Attach a NAT Gateway
+  include_role:
+    name: terraplate/aws/vpc/nat-gateway
+  vars:
+    external_tfvars:
+      allocation_id:
+        provider: ec2-eip
+      subnet_id:
+        provider: '{{ nat_gateway.subnet }}'
+  when: nat_gateway is defined
+
+- name: Set the default route of the VPC Main Route Table to the NAT Gateway
+  include_role:
+    name: terraplate/aws/vpc/route
+  vars:
+    meta:
+      name: route-subnet-to-nat-gw
+    external_tfvars:
+      route_table_id:
+        provider: vpc-vpc
+        name: route_table_id
+      gateway_id:
+        provider: vpc-gw
+        name: gateway_id
+  when: nat_gateway is defined
