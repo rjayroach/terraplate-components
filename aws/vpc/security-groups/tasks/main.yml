@@ -22,7 +22,7 @@
     loop_var: sg
 
 
-- name: SG CIDR Rule
+- name: Create CIDR Rule
   include_role:
     name: terraplate/aws/vpc/security-group-rule-cidr
   vars:
@@ -43,7 +43,7 @@
     loop_var: rule
 
 
-- name: SG Rule
+- name: Create Source Group Rule
   # - name: SG Rule ingress tcp from 22 to 22 bastion host
   # { port: 22, type: ingress, provider: app-server, source_provider: bastion, source_name: 
   include_role:

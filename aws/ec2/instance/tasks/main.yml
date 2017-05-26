@@ -49,10 +49,13 @@
   include_role:
     name: terraplate/aws/route53/record
   vars:
+    tfvars:
+      name: '{{ route53_host_name }}'
     external_tfvars:
       public_ip:
         provider: ec2-eip
       zone_id:
         provider: domain
-        name: route53_subdomain_zone_id
-  when: map_hostname is defined
+        # name: route53_subdomain_zone_id
+        name: zone_id
+  when: route53_host_name is defined

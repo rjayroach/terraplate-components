@@ -1,7 +1,0 @@
----
-component_meta:
-  ns: vpc
-  name: sg-rails
-
-sg_app_server: security-group-rails-app-server
-sg_elb: sg-elb-rails

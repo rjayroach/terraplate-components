@@ -1,0 +1,102 @@
+# See: http://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/load-balancer-getting-started.html
+---
+- include_role:
+    name: terraplate/component
+
+- name: Create an ALB
+  include_role:
+    name: terraplate/aws/ec2/alb
+  vars:
+    tfvars:
+      tags: '{{ tags }}'
+    external_tfvars:
+      subnets: '{{ subnets }}'
+      security_groups: '{{ security_groups }}'
+  when: subnets is defined
+
+# What port will requests be forwarded to
+- name: Create an ALB Target Group
+  include_role:
+    name: terraplate/aws/ec2/alb-target-group
+  vars:
+    meta:
+      name: 'tg-{{ tg.name }}'
+    tfvars:
+      name: '{{ tg.name }}'
+      port: '{{ tg.port }}'
+      protocol: '{{ tg.protocol }}'
+      tags: '{{ tg.tags }}'
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+  with_items: '{{ target_groups }}'
+  loop_control:
+    loop_var: tg
+
+- name: Attach the ALB Target Group to the ALB
+  include_role:
+    name: terraplate/aws/ec2/alb-target-group-attachment
+  vars:
+    meta:
+      name: 'tga-{{ attachment.name }}'
+    tfvars:
+      name: '{{ attachment.name }}'
+      port: '{{ attachment.port }}'
+    external_tfvars:
+      target_group_arn:
+        provider: 'ec2-tg-{{ attachment.target_group }}'
+      target_id:
+        provider: '{{ attachment.instance }}'
+        name: ec2_instance_instance_id
+  with_items: '{{ target_group_attachments }}'
+  loop_control:
+    loop_var: attachment
+
+# The listener listens on an external port and then forward to a target group
+- name: Create ALB Listeners
+  include_role:
+    name: terraplate/aws/ec2/alb-listener
+  vars:
+    meta:
+      name: 'listener-{{ listener.name }}'
+    tfvars:
+      name: '{{ listener.name }}'
+      port: '{{ listener.port }}'
+      protocol: '{{ listener.protocol }}'
+    external_tfvars:
+      certificate_arn:
+        provider: iam
+        name: server_cert_arn
+      default_target_group_arn:
+        provider: 'ec2-tg-{{ listener.target_group }}'
+        name: target_group_arn
+      load_balancer_arn:
+        provider: ec2-alb
+  with_items: '{{ listeners }}'
+  loop_control:
+    loop_var: listener
+
+
+- name: Create a Route53 record for the ALB
+  include_role:
+    name: terraplate/aws/route53/record-alias
+  vars:
+    meta:
+      name: 'hostname-{{ record.name }}'
+    tfvars:
+      name: '{{ record.name }}{{ record.domain }}'
+    external_tfvars:
+      # TODO: the zone id should be set from the user vars
+      zone_id:
+        provider: '{{ record.zone_provider }}'
+        name: '{{ record.zone_name }}'
+      alias_name:
+        provider: ec2-alb
+        name: dns_name
+      alias_zone_id:
+        provider: ec2-alb
+        name: zone_id
+  with_items: '{{ host_names }}'
+  loop_control:
+    loop_var: record
