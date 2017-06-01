@@ -53,7 +53,6 @@
     external_tfvars:
       vpc_id:
         provider: vpc-vpc
-        name: vpc_id
     tfvars:
       availability_zone: '{{ subnet.availability_zone }}'
       cidr_block: '{{ subnet.cidr_block }}'
@@ -99,7 +98,7 @@
 
 - name: Set the default route of the VPC Main Route Table to the NAT Gateway
   include_role:
-    name: terraplate/aws/vpc/route
+    name: terraplate/aws/vpc/route-nat-gateway
   vars:
     meta:
       name: route-subnet-to-nat-gw
@@ -107,7 +106,7 @@
       route_table_id:
         provider: vpc-vpc
         name: route_table_id
-      gateway_id:
+      nat_gateway_id:
         provider: vpc-gw
         name: gateway_id
   when: nat_gateway is defined

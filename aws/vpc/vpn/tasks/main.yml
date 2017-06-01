@@ -1,0 +1,67 @@
+# Create a VPN in a VPC
+# See: http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_VPN.html
+---
+- include_role:
+    name: terraplate/component
+
+# A virtual private gateway is the VPN concentrator on the Amazon side of the VPN connection.
+- name: Define a Virtual Private Gateway
+  include_role:
+    name: terraplate/aws/vpc/vpn-gateway
+  vars:
+    external_tfvars:
+      vpc_id:
+        provider: vpc
+        name: vpc_vpc_vpc_id
+    tfvars:
+      tags:
+        Name: vpn-gateway
+
+- name: Create a Customer Gateway
+  include_role:
+    name: terraplate/aws/vpc/customer-gateway
+  vars:
+    tfvars:
+      tags:
+        Name: customer-gateway
+      ip_address: '{{ remote_ip_address }}'
+
+- name: Create a VPN Connection
+  include_role:
+    name: terraplate/aws/vpc/vpn-connection
+  vars:
+    external_tfvars:
+      vpn_gateway_id:
+        provider: vpc-vgw
+        name: gateway_id
+      customer_gateway_id:
+        provider: vpc-cgw
+        name: gateway_id
+    tfvars:
+      tags:
+        Name: vpn-connection
+
+- name: Create a VPN Connection Route
+  include_role:
+    name: terraplate/aws/vpc/vpn-connection-route
+  vars:
+    external_tfvars:
+      vpn_connection_id:
+        provider: vpc-vpn
+    tfvars:
+      destination_cidr_block: '{{ destination_cidr_block }}'
+
+- name: Add a route of the VPC Main Route Table to the Customer Gateway
+  include_role:
+    name: terraplate/aws/vpc/route
+  vars:
+    meta:
+      name: route-remote-net-to-vgw
+    external_tfvars:
+      route_table_id:
+        provider: vpc
+        name: vpc_vpc_route_table_id
+      gateway_id:
+        provider: vpc-vgw
+    tfvars:
+      destination_cidr_block: '{{ destination_cidr_block }}'
