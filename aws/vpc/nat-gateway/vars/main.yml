@@ -1,0 +1,4 @@
+---
+component_meta:
+  ns: vpc
+  name: nat-gateway

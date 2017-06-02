@@ -1,0 +1,35 @@
+# Create a VPC with public and private subnets according to AWS documentation
+# See: http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html#Configuration-2
+---
+- include_role:
+    name: terraplate/component
+
+### Create Nat GW with EIP and route table for private subnet
+- name: Create an EC2 EIP for the NAT Gateway
+  include_role:
+    name: terraplate/aws/ec2/eip
+
+- name: Attach a NAT Gateway
+  include_role:
+    name: terraplate/aws/vpc/nat-gateway
+  vars:
+    external_tfvars:
+      allocation_id:
+        provider: ec2-eip
+      subnet_id:
+        provider: vpc
+        name: '{{ place_in_subnet }}'
+
+- name: Set the default route of the VPC Main Route Table to the NAT Gateway
+  include_role:
+    name: terraplate/aws/vpc/route-nat-gateway
+  vars:
+    meta:
+      name: route-subnet-to-nat-gw
+    external_tfvars:
+      route_table_id:
+        provider: vpc
+        name: vpc_vpc_route_table_id
+      nat_gateway_id:
+        provider: vpc-gw
+        name: gateway_id

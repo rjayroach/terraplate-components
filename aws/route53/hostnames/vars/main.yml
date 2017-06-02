@@ -1,0 +1,4 @@
+---
+component_meta:
+  ns: route53
+  name: hostnames

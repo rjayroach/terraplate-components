@@ -3,7 +3,6 @@
 ---
 - include_role:
     name: terraplate/component
-  tags: always
 
 - name: Define a VPC
   include_role:
@@ -77,36 +76,3 @@
   with_items: '{{ subnets }}'
   loop_control:
     loop_var: subnet
-
-
-### Create Nat GW with EIP and route table for private subnet
-- name: Create an EC2 EIP for the NAT Gateway
-  include_role:
-    name: terraplate/aws/ec2/eip
-  when: nat_gateway is defined
-
-- name: Attach a NAT Gateway
-  include_role:
-    name: terraplate/aws/vpc/nat-gateway
-  vars:
-    external_tfvars:
-      allocation_id:
-        provider: ec2-eip
-      subnet_id:
-        provider: '{{ nat_gateway.subnet }}'
-  when: nat_gateway is defined
-
-- name: Set the default route of the VPC Main Route Table to the NAT Gateway
-  include_role:
-    name: terraplate/aws/vpc/route-nat-gateway
-  vars:
-    meta:
-      name: route-subnet-to-nat-gw
-    external_tfvars:
-      route_table_id:
-        provider: vpc-vpc
-        name: route_table_id
-      nat_gateway_id:
-        provider: vpc-gw
-        name: gateway_id
-  when: nat_gateway is defined

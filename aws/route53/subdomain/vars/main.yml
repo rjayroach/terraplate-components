@@ -1,4 +1,4 @@
 ---
 component_meta:
-  ns: support
+  ns: route53
   name: subdomain

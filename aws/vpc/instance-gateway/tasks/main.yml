@@ -1,0 +1,53 @@
+# Create an EC2 instance as a NAT Gateway
+# See: http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_NAT_Instance.html
+---
+- include_role:
+    name: terraplate/component
+
+### Create Instance GW with EIP and route table for private subnet
+- name: Create an EC2 EIP for the Instance Gateway
+  include_role:
+    name: terraplate/aws/ec2/eip
+
+- name: Create an EC2 instance
+  include_role:
+    name: terraplate/aws/ec2/instance
+  vars:
+    external_tfvars:
+      subnet_id:
+        provider: vpc
+        name: '{{ subnet_id_name }}'
+      vpc_security_group_ids: '{{ vpc_security_group_ids }}'
+    tfvars:
+      amis:
+        us-gov-west-1: ami-6ae2660b
+      associate_public_ip_address: 'true' # "{{ associate_public_ip_address | default('false') }}"
+      source_dest_check:  "{{ source_dest_check | default('false') }}"
+      availability_zone: '{{ availability_zone }}'
+      instance_type: "{{ instance_type | default('t2.micro') }}"
+      key_name: '{{ key_name }}'
+      region: '{{ region }}'
+      tags: '{{ tags }}'
+
+- name: Associate the EIP to the EC2
+  include_role:
+    name: terraplate/aws/ec2/eip-association
+  vars:
+    external_tfvars:
+      allocation_id:
+        provider: ec2-eip
+      instance_id:
+        provider: ec2-instance
+
+- name: Set the default route of the VPC Main Route Table to the Instance Gateway
+  include_role:
+    name: terraplate/aws/vpc/route-instance-gateway
+  vars:
+    meta:
+      name: route-subnet-to-nat-gw
+    external_tfvars:
+      route_table_id:
+        provider: vpc
+        name: vpc_vpc_route_table_id
+      instance_id:
+        provider: ec2-instance

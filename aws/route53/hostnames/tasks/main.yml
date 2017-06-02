@@ -1,0 +1,25 @@
+---
+- include_role:
+    name: terraplate/component
+
+- name: Create a Route53 record for the ALB
+  include_role:
+    name: terraplate/aws/route53/record-alias
+  vars:
+    meta:
+      name: 'hostname-{{ record.name }}'
+    tfvars:
+      name: '{{ record.name }}{{ record.domain }}'
+    external_tfvars:
+      zone_id:
+        provider: '{{ record.zone_provider }}'
+        name: '{{ record.zone_name }}'
+      alias_name:
+        provider: '{{ record.alias_provider }}' # ec2-alb
+        name: '{{ record.alias_name }}' # dns_name
+      alias_zone_id:
+        provider: '{{ record.alias_provider }}' # ec2-alb
+        name: '{{ record.alias_zone_id }}' #zone_id
+  with_items: '{{ host_names }}'
+  loop_control:
+    loop_var: record
