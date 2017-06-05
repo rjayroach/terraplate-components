@@ -27,6 +27,7 @@
         name: group_id
       vpc_security_group_ids: '{{ vpc_security_group_ids }}'
     tfvars:
+      allocated_storage: '{{ allocated_storage }}'
       availability_zone: '{{ availability_zone }}'
       engine: '{{ engine }}'
       engine_version: '{{ engine_version }}'
