@@ -15,11 +15,23 @@
       private_key: '{{ certificate.private_key }}'
   when: certificate is defined
 
+
+- name: Upload Server Certificate
+  include_role:
+    name: terraplate/aws/acm/certificate
+  vars:
+    tfvars:
+      domain: '{{ acm_certificate.domain }}'
+      statuses: "{{ acm_certificate.statuses | default(['ISSUED']) }}"
+  when: acm_certificate is defined
+
+
 - name: Create an ALB
   include_role:
     name: terraplate/aws/ec2/alb
   vars:
     tfvars:
+      name: '{{ alb_name | default(name) }}'
       tags: '{{ tags }}'
     external_tfvars:
       subnets: '{{ subnets }}'
@@ -77,8 +89,10 @@
       port: '{{ listener.port }}'
       protocol: '{{ listener.protocol }}'
     external_tfvars:
+      # TODO: The listener's certificate is a property of the listener
       certificate_arn:
-        provider: iam-server-certificate
+        # provider: iam-server-certificate
+        provider: acm-certificate
         name: arn
       default_target_group_arn:
         provider: 'ec2-tg-{{ listener.target_group }}'
