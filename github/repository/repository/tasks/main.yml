@@ -1,0 +1,19 @@
+---
+- name: Setup the component
+  include_role:
+    name: terraplate/component
+  vars:
+    component:
+      needs:
+        providers: [github]
+
+- name: Create a repository
+  include_role:
+    name: terraplate/providers/github/repository/repository
+  vars:
+    resource_name: '{{ repo.key }}'
+    resource_ns: repos
+    resource_static: true # NOTE: means write the values directly in the lib modules rather than tfvars
+  with_dict: '{{ resources.repos }}'
+  loop_control:
+    loop_var: repo

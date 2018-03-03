@@ -1,53 +1,63 @@
 ---
-- include_role:
+- name: Setup the component
+  include_role:
     name: terraplate/component
+  vars:
+    component:
+      needs:
+        providers: [aws]
+        remote_states: [vpc]
+      provides:
+        vpc_id:
+          provider: vpc # match the resource_name of the resource
+          name: vpc_vpc_id
+        security_group_id:
+          provider: security-group # match the resource_name of the resource providing the var
 
-### SG for App Server
 - name: Create Security Group
   include_role:
-    name: terraplate/aws/vpc/security-group
+    name: terraplate/providers/aws/vpc/security-group
   vars:
-    meta:
-      name: '{{ sg.meta_name }}'
-    external_tfvars:
-      vpc_id:
-        provider: vpc
-        name: vpc_vpc_vpc_id
-    tfvars:
-      description: '{{ sg.description }}'
-      name: '{{ sg.name }}'
-      tags: '{{ sg.tags }}'
-  with_items: '{{ security_groups }}'
+    resource_name: '{{ security_group.key }}'
+    resource_ns: security_groups
+    resource_static: true # NOTE: means write the values directly in the lib modules rather than tfvars
+    resource:
+      description: '{{ security_group.value.description }}'
+      name: '{{ security_group.key }}'
+      tags: '{{ security_group.value.tags }}'
+  with_dict: '{{ resources.security_groups }}'
   loop_control:
-    loop_var: sg
+    loop_var: security_group
 
 
+# TODO: Make it possible to embed the cidr_rules under the security_group that they belong to
+# TODO: somehow the to_port ended up in AWS as a range 0-22
 - name: Create CIDR Rule
   include_role:
-    name: terraplate/aws/vpc/security-group-rule-cidr
+    name: terraplate/providers/aws/vpc/security-group-rule-cidr
   vars:
-    meta:
-      name: 'rule-{{ rule.group }}-{{ rule.type }}-{{ rule.port }}'
-    external_tfvars:
+    resource_name: 'cidr-rule-{{ cidr_rule.key }}'
+    resource_static: true # NOTE: means write the values directly in the lib modules rather than tfvars
+    # name: 'rule-{{ rule.group }}-{{ rule.type }}-{{ rule.port }}'
+    resource:
       security_group_id:
-        provider: 'vpc-{{ rule.group }}'
-    tfvars:
-      name: 'allow-{{ rule.port }}-{{ rule.type }}'
-      type: '{{ rule.type }}'
-      protocol: "{{ rule.protocol | default('tcp') }}"
-      from_port: '{{ rule.port }}'
-      to_port: '{{ rule.port }}'
-      cidr_blocks: "{{ rule.cidr_blocks | default('0.0.0.0/0') }}"
-  with_items: '{{ cidr_rules }}'
+        provider: '{{ cidr_rule.value.group }}'
+      name: '{{ cidr_rule.key }}' # 'allow-{{ cidr_rule.value.from_port }}-{{ cidr_rule.value.type }}'
+      type: '{{ cidr_rule.value.type }}'
+      protocol: "{{ cidr_rule.value.protocol | default('tcp') }}"
+      from_port: "{{ cidr_rule.value.from_port | default('0') }}"
+      to_port: "{{ cidr_rule.value.to_port | default('0') }}"
+      cidr_blocks: "{{ cidr_rule.value.cidr_blocks | default('0.0.0.0/0') }}"
+  with_dict: '{{ resources.cidr_rules }}'
   loop_control:
-    loop_var: rule
+    loop_var: cidr_rule
 
-
+# TODO: This still needs a refactor
 - name: Create Source Group Rule
   # - name: SG Rule ingress tcp from 22 to 22 bastion host
   # { port: 22, type: ingress, provider: app-server, source_provider: bastion, source_name: 
   include_role:
-    name: terraplate/aws/vpc/security-group-rule
+    name: terraplate/providers/aws/vpc/security-group-rule
   vars:
     meta:
       name: 'rule-{{ rule.group }}-{{ rule.type }}-{{ rule.port }}'
@@ -66,3 +76,4 @@
   with_items: '{{ sg_rules }}'
   loop_control:
     loop_var: rule
+  when: false

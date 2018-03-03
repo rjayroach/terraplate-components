@@ -1,4 +1,3 @@
 ---
-component_meta:
-  ns: app
-  name: server
+component_namespace: aws
+component_name: ec2-instance

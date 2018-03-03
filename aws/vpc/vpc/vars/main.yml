@@ -1,4 +1,3 @@
 ---
-component_meta:
-  ns: vpc
-  name: vpc
+component_namespace: aws # backend
+component_name: vpc-public-private-with-nat-gw # network

@@ -1,61 +1,56 @@
 ---
-- include_role:
+- name: Setup the component
+  include_role:
     name: terraplate/component
+  vars:
+    # NOTE: vars provided by remote_states should be listed in the 'provides' hash with the provider set to the remote_state name
+    component:
+      needs:
+        providers: [aws]
+        remote_states: [vpc, security, dns]
+      provides:
+        instance_id:
+          provider: instance
+        allocation_id:
+          provider: eip
+
 
 - name: Create an EC2 key-pair
   include_role:
-    name: terraplate/aws/ec2/key-pair
+    name: terraplate/providers/aws/ec2/key-pair
   vars:
-    tfvars:
-      key_name: '{{ key_name }}'
-      public_key_name: '{{ public_key_name }}'
-      public_key_path: '{{ public_key_path }}'
-  when: create_key_pair is defined
+    resource:
+      key_name: '{{ resources.key_pair.key_name }}'
+      public_key_name: '{{ resources.key_pair.public_key_name }}'
+      public_key_path: '{{ resources.key_pair.public_key_path }}'
+  when: resources.key_pair is defined
 
 - name: Create an EC2 instance
   include_role:
-    name: terraplate/aws/ec2/instance
+    name: terraplate/providers/aws/ec2/instance
   vars:
-    external_tfvars:
-      subnet_id:
-        provider: vpc
-        name: '{{ subnet_id_name }}'
-      vpc_security_group_ids: '{{ vpc_security_group_ids }}'
-    tfvars:
+    resource:
       associate_public_ip_address: "{{ associate_public_ip_address | default('false') }}"
-      availability_zone: '{{ availability_zone }}'
-      instance_type: "{{ instance_type | default('t2.micro') }}"
-      key_name: '{{ key_name }}'
-      region: '{{ region }}'
-      tags: '{{ tags }}'
 
 - name: Create an EC2 EIP
   include_role:
-    name: terraplate/aws/ec2/eip
-  when: map_eip is defined
+    name: terraplate/providers/aws/ec2/eip
+  when: resource.instance.eip is defined and resource.instance.eip
 
 - name: Associate the EIP to the EC2
   include_role:
-    name: terraplate/aws/ec2/eip-association
-  vars:
-    external_tfvars:
-      allocation_id:
-        provider: ec2-eip
-      instance_id:
-        provider: ec2-instance
-  when: map_eip is defined
+    name: terraplate/providers/aws/ec2/eip-association
+  when: resource.instance.eip is defined and resource.instance.eip
 
 - name: Create a Route53 record
   include_role:
-    name: terraplate/aws/route53/record
+    name: terraplate/providers/aws/route53/record
   vars:
-    tfvars:
-      name: '{{ route53_host_name }}'
-    external_tfvars:
-      public_ip:
-        provider: ec2-eip
+    resource:
+      records:
+        provider: eip
+        name: public_ip
       zone_id:
-        provider: domain
-        # name: route53_subdomain_zone_id
-        name: zone_id
-  when: route53_host_name is defined
+        provider: dns
+        name: zone_zone_id
+  when: resources.record is defined

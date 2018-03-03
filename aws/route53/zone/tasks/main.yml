@@ -1,0 +1,26 @@
+---
+- name: Setup the component
+  include_role:
+    name: terraplate/component
+  vars:
+    component:
+      needs:
+        providers: [aws]
+      provides:
+        zone_id:
+          provider: zone # match the resource_name of the resource providing the var
+
+- name: Define a Domain 
+  include_role:
+    name: terraplate/providers/aws/route53/zone
+
+- name: Add resource records
+  include_role:
+    name: terraplate/providers/aws/route53/record
+  vars:
+    resource_name: '{{ record.key }}'
+    resource_ns: records
+    resource_static: true # NOTE: means write the values directly in the lib modules rather than tfvars
+  with_dict: '{{ resources.records }}'
+  loop_control:
+    loop_var: record
